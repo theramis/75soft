@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#121212">
+    <title>75 Soft</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💪</text></svg>">
+</head>
+<body class="theme-smooth">
+
+    <!-- Setup View -->
+    <div id="setup-view" class="view hidden">
+        <h1>75 Soft Setup</h1>
+        <p class="subtitle">Define your daily tasks for the next 75 days.</p>
+        
+        <div class="setup-form">
+            <input type="text" id="new-task-input" placeholder="e.g. Drink 1 gallon of water">
+            <button id="add-task-btn">Add</button>
+        </div>
+
+        <ul id="setup-task-list"></ul>
+
+        <div class="setup-actions">
+            <button id="start-challenge-btn" disabled>Start Challenge</button>
+            <p class="warning-text">Once started, tasks are locked for 75 days.</p>
+        </div>
+    </div>
+
+    <!-- Dashboard View -->
+    <div id="dashboard-view" class="view hidden">
+        <header>
+            <div class="header-content">
+                <h1>75 Soft</h1>
+                <button id="open-settings-btn" aria-label="Settings">⚙️</button>
+            </div>
+        </header>
+
+        <div class="progress-container">
+            <svg class="progress-ring" width="200" height="200">
+                <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.1)" stroke-width="12" fill="transparent" r="88" cx="100" cy="100"/>
+                <circle class="progress-ring__circle" stroke="#4ade80" stroke-width="12" fill="transparent" r="88" cx="100" cy="100"/>
+            </svg>
+            <div class="progress-text">
+                <span id="current-day-label">Day 1</span>
+                <span class="total-days">of 75</span>
+            </div>
+        </div>
+
+        <div class="today-header">
+            <h2 id="today-date-text">Today</h2>
+        </div>
+
+        <ul id="dashboard-task-list"></ul>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="modal-content settings-modal">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="close-modal-btn">✖</button>
+            </div>
+            
+            <div class="settings-section">
+                <h3>Animations</h3>
+                <select id="animation-style-select">
+                    <option value="smooth">Smooth & Satisfying</option>
+                    <option value="snappy">Snappy & Instant</option>
+                    <option value="playful">Playful & Haptic</option>
+                </select>
+            </div>
+
+            <div class="settings-section">
+                <h3>Daily Reminders</h3>
+                <div class="reminder-toggle-container">
+                    <label for="enable-reminders-checkbox" class="toggle-label">
+                        <input type="checkbox" id="enable-reminders-checkbox">
+                        Enable daily reminder
+                    </label>
+                </div>
+                <div id="reminder-time-container" class="hidden">
+                    <input type="time" id="reminder-time-input" value="20:00">
+                </div>
+                <p class="warning-text" style="font-size: 0.8rem; margin-top: 8px; text-align: left;">
+                    *Experimental feature. Only works on supported devices (Android/Chrome).
+                </p>
+            </div>
+
+            <div class="settings-section">
+                <h3>Backup & Restore</h3>
+                <p>Copy this code to backup your progress, or paste a code to restore.</p>
+                <textarea id="backup-data-textarea" rows="4"></textarea>
+                <div class="backup-actions">
+                    <button id="copy-backup-btn">Copy</button>
+                    <button id="restore-backup-btn">Restore</button>
+                </div>
+            </div>
+
+            <div class="settings-section danger-zone">
+                <h3>Danger Zone</h3>
+                <button id="reset-challenge-btn" class="danger-btn">Reset Challenge</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grace Prompt Modal -->
+    <div id="grace-prompt-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>Did you complete yesterday?</h2>
+            <p>You didn't check off all your tasks yesterday. Did you complete them but forget to check in?</p>
+            <div class="modal-actions">
+                <button id="grace-yes-btn" class="primary-btn">Yes, I completed them</button>
+                <button id="grace-no-btn" class="secondary-btn">No, I missed them</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Uncheck Confirmation Modal -->
+    <div id="uncheck-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>Uncheck Task?</h2>
+            <p>Are you sure you want to uncheck this task? It will mark it as incomplete for today.</p>
+            <div class="modal-actions">
+                <button id="uncheck-confirm-btn" class="danger-btn">Yes, Uncheck</button>
+                <button id="uncheck-cancel-btn" class="secondary-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Failure Modal -->
+    <div id="failure-modal" class="modal-overlay hidden">
+        <div class="modal-content failure-content">
+            <h2>Don't give up!</h2>
+            <p>You broke your streak, but that's okay. Building habits is tough. Let's start again, Day 1.</p>
+            <div class="modal-actions">
+                <button id="failure-restart-btn" class="primary-btn">Restart Day 1</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="modal-overlay hidden">
+        <div class="modal-content success-content">
+            <h2>🎉 Challenge Completed! 🎉</h2>
+            <p>Incredible dedication! You have successfully completed 75 Soft.</p>
+            <div class="modal-actions">
+                <button id="success-stay-btn" class="primary-btn">Bask in the glory</button>
+                <button id="success-new-btn" class="secondary-btn">Start a new journey</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
