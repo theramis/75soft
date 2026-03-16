@@ -46,6 +46,7 @@ const dashboardView = document.getElementById('dashboard-view');
 
 // Setup UI
 const newTaskInput = document.getElementById('new-task-input');
+const newTargetInput = document.getElementById('new-task-target');
 const addTaskBtn = document.getElementById('add-task-btn');
 const setupTaskList = document.getElementById('setup-task-list');
 const startChallengeBtn = document.getElementById('start-challenge-btn');
@@ -101,9 +102,13 @@ function applyTheme() {
 // --- Setup Interactions ---
 addTaskBtn.addEventListener('click', () => {
     const taskText = newTaskInput.value.trim();
+    const targetValue = parseInt(newTargetInput.value, 10);
+    const target = (!isNaN(targetValue) && targetValue > 0) ? targetValue : null;
+
     if (taskText) {
-        state.tasks.push(taskText);
+        state.tasks.push({ text: taskText, target: target });
         newTaskInput.value = '';
+        newTargetInput.value = '';
         saveState();
         renderSetupTasks();
     }
@@ -115,10 +120,17 @@ newTaskInput.addEventListener('keypress', (e) => {
 
 function renderSetupTasks() {
     setupTaskList.innerHTML = '';
-    state.tasks.forEach((task, index) => {
+    state.tasks.forEach((taskObj, index) => {
+        const text = typeof taskObj === 'string' ? taskObj : taskObj.text;
+        const target = typeof taskObj === 'string' ? null : taskObj.target;
+        const targetHtml = target ? `<span class="setup-target-badge">Goal: ${target}</span>` : '';
+
         const li = document.createElement('li');
         li.innerHTML = `
-            <span>${task}</span>
+            <div class="setup-task-info">
+                <span class="task-text-setup">${text}</span>
+                ${targetHtml}
+            </div>
             <button class="delete-task-btn" onclick="deleteSetupTask(${index})" aria-label="Delete">✖</button>
         `;
         setupTaskList.appendChild(li);
@@ -143,9 +155,17 @@ startChallengeBtn.addEventListener('click', () => {
 // --- Dashboard Logic ---
 function isDayComplete(dateStr) {
     const dayCheckIns = state.checkIns[dateStr] || {};
-    // A day is complete if it has an entry for every task index and it's true
     for (let i = 0; i < state.tasks.length; i++) {
-        if (!dayCheckIns[i]) return false;
+        const taskObj = state.tasks[i];
+        const target = typeof taskObj === 'string' ? null : taskObj.target;
+        const val = dayCheckIns[i];
+        
+        if (target) {
+            let progress = typeof val === 'number' ? val : (val ? target : 0);
+            if (progress < target) return false;
+        } else {
+            if (!val) return false;
+        }
     }
     return true;
 }
@@ -232,41 +252,120 @@ function renderDashboardTasks() {
     const todayStr = getLocalDateString(new Date());
     const dayCheckIns = state.checkIns[todayStr] || {};
 
-    state.tasks.forEach((task, index) => {
-        const isCompleted = !!dayCheckIns[index];
+    state.tasks.forEach((taskObj, index) => {
+        const text = typeof taskObj === 'string' ? taskObj : taskObj.text;
+        const target = typeof taskObj === 'string' ? null : taskObj.target;
+        
+        let progress = dayCheckIns[index];
+        let isCompleted = false;
+        
+        if (target) {
+            if (typeof progress !== 'number') progress = progress ? target : 0;
+            isCompleted = progress >= target;
+        } else {
+            isCompleted = !!progress;
+        }
+
         const li = document.createElement('li');
         li.className = `task-item ${isCompleted ? 'completed' : ''}`;
-        li.innerHTML = `
-            <div class="task-checkbox"></div>
-            <span class="task-text">${task}</span>
-        `;
-        li.addEventListener('click', () => handleTaskToggle(index, isCompleted, todayStr));
+        
+        if (target) {
+            // Calculate SVG circle properties for progress ring
+            const radius = 13; // half of 28px - 1px border
+            const circumference = radius * 2 * Math.PI;
+            const progressRatio = isCompleted ? 1 : (progress / target);
+            const offset = circumference - (progressRatio * circumference);
+            
+            // Only show the progress ring if not completed (when completed, it turns solid green)
+            const ringHtml = !isCompleted && progress > 0 ? `
+                <svg class="task-progress-ring" viewBox="0 0 28 28">
+                    <circle cx="14" cy="14" r="${radius}" stroke-dasharray="${circumference} ${circumference}" stroke-dashoffset="${offset}"></circle>
+                </svg>
+            ` : '';
+
+            li.innerHTML = `
+                <div class="task-checkbox">${ringHtml}</div>
+                <span class="task-text">${text}</span>
+                <div class="progress-controls" onclick="event.stopPropagation()">
+                    <button class="progress-btn minus" onclick="handleProgressChange(${index}, -1, '${todayStr}', ${target})">-</button>
+                    <span class="progress-text-display">${progress} / ${target}</span>
+                    <button class="progress-btn plus" onclick="handleProgressChange(${index}, 1, '${todayStr}', ${target})">+</button>
+                </div>
+            `;
+            li.addEventListener('click', () => {
+                if (isCompleted) {
+                    handleTaskToggle(index, isCompleted, todayStr, true, target);
+                } else {
+                    handleProgressChange(index, 1, todayStr, target);
+                }
+            });
+        } else {
+            li.innerHTML = `
+                <div class="task-checkbox"></div>
+                <span class="task-text">${text}</span>
+            `;
+            li.addEventListener('click', () => handleTaskToggle(index, isCompleted, todayStr, false, null));
+        }
+
         dashboardTaskList.appendChild(li);
     });
 }
 
 let pendingUncheckIndex = null;
 let pendingUncheckDateStr = null;
+let pendingUncheckNextValue = null;
 
-function handleTaskToggle(index, isCompleted, dateStr) {
+window.handleProgressChange = (index, delta, dateStr, target) => {
+    if (!state.checkIns[dateStr]) state.checkIns[dateStr] = {};
+    let current = state.checkIns[dateStr][index];
+    if (typeof current !== 'number') current = current ? target : 0;
+    
+    let next = current + delta;
+    next = Math.max(0, Math.min(next, target));
+    
+    if (current >= target && next < target) {
+        pendingUncheckIndex = index;
+        pendingUncheckDateStr = dateStr;
+        pendingUncheckNextValue = next;
+        uncheckModal.classList.remove('hidden');
+        return;
+    }
+    
+    if (next !== current) {
+        updateCheckIn(dateStr, index, next, target);
+    }
+};
+
+function updateCheckIn(dateStr, index, value, target) {
+    if (!state.checkIns[dateStr]) state.checkIns[dateStr] = {};
+    state.checkIns[dateStr][index] = value;
+    saveState();
+    renderDashboardTasks();
+    updateProgressUI();
+    if (target ? value >= target : value) {
+        checkIfDay75Completed();
+    }
+    if (state.remindersEnabled) scheduleNextNotification();
+}
+
+function handleTaskToggle(index, isCompleted, dateStr, isNumeric = false, target = null) {
     if (isCompleted) {
         pendingUncheckIndex = index;
         pendingUncheckDateStr = dateStr;
+        pendingUncheckNextValue = isNumeric ? (target ? target - 1 : 0) : false;
         uncheckModal.classList.remove('hidden');
     } else {
-        if (!state.checkIns[dateStr]) state.checkIns[dateStr] = {};
-        state.checkIns[dateStr][index] = true;
-        saveState();
-        renderDashboardTasks();
-        updateProgressUI();
-        checkIfDay75Completed();
-        if (state.remindersEnabled) scheduleNextNotification();
+        if (isNumeric && target) {
+            handleProgressChange(index, 1, dateStr, target);
+        } else {
+            updateCheckIn(dateStr, index, true, null);
+        }
     }
 }
 
 document.getElementById('uncheck-confirm-btn').addEventListener('click', () => {
     if (pendingUncheckIndex !== null && pendingUncheckDateStr) {
-        state.checkIns[pendingUncheckDateStr][pendingUncheckIndex] = false;
+        state.checkIns[pendingUncheckDateStr][pendingUncheckIndex] = pendingUncheckNextValue;
         saveState();
         renderDashboardTasks();
         updateProgressUI();

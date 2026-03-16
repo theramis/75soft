@@ -13,7 +13,7 @@ The 75 Soft app is a web application designed to help users track their progress
 - **The "Day" Definition**: Rollover happens strictly at **Midnight Local Time**.
 - **Challenge Start**: The challenge begins immediately the moment the user first defines and saves their tasks. "Today" counts as Day 1.
 - **Task Locking**: Once the 75-day challenge has started, tasks are strictly locked. Users cannot add, edit, or delete tasks. Any modification to the task list requires a full reset to Day 1.
-- **Task Toggling**: Users can check off tasks as completed. If they need to uncheck a task (due to an accidental tap), they must pass a confirmation dialog to prevent accidental unchecking.
+- **Task Toggling & Progress**: Users can track tasks either as simple boolean checkmarks or with numeric progress (e.g., 1/4 bottles). For numeric tasks, users can increment/decrement progress via +/- buttons up to a target goal. Once the goal is reached, the task auto-completes. Progress cannot exceed the target. If they need to uncheck a task (due to an accidental tap), they must pass a confirmation dialog to prevent accidental unchecking.
 - **The Grace Prompt**: Because the app relies on LocalStorage, it cannot automatically reset the streak at exactly midnight. If the user opens the app on a new day and yesterday's tasks were left unchecked, they will receive a "Grace Prompt" asking if they actually completed them but forgot to check in.
 - **Local Notifications (Experimental)**: Users can enable a daily reminder notification at a custom time. It uses the experimental Notification Triggers API (`showTrigger`), which operates completely offline via the Service Worker. Due to its experimental nature, it is primarily supported on Android/Chrome.
 

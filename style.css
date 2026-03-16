@@ -67,7 +67,7 @@ h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 16px; letter-spacing: -
     margin-bottom: 32px;
 }
 
-input[type="text"] {
+input[type="text"], input[type="number"] {
     flex: 1;
     padding: 14px 20px;
     background-color: rgba(255,255,255,0.03);
@@ -79,14 +79,18 @@ input[type="text"] {
     box-shadow: inset var(--shadow-sm);
 }
 
-input[type="text"]:focus {
+.target-input {
+    flex: 0 0 140px !important;
+}
+
+input[type="text"]:focus, input[type="number"]:focus {
     outline: none;
     border-color: var(--accent-color);
     background-color: rgba(255,255,255,0.05);
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2), inset var(--shadow-sm);
 }
 
-input[type="text"]::placeholder {
+input[type="text"]::placeholder, input[type="number"]::placeholder {
     color: rgba(148, 163, 184, 0.6);
 }
 
@@ -153,6 +157,21 @@ button:disabled {
     animation: fadeIn var(--transition-duration) var(--transition-timing);
     font-size: 1.1rem;
     box-shadow: var(--shadow-sm);
+}
+
+.setup-task-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.setup-target-badge {
+    font-size: 0.8rem;
+    background-color: rgba(16, 185, 129, 0.15);
+    color: var(--accent-color);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 600;
 }
 
 .delete-task-btn {
@@ -330,6 +349,7 @@ header {
     align-items: center;
     transition: all var(--transition-duration) var(--transition-timing);
     background-color: rgba(0,0,0,0.2);
+    position: relative;
 }
 
 .task-item.completed .task-checkbox {
@@ -347,10 +367,28 @@ header {
     transform: rotate(45deg) translateY(-2px);
     opacity: 0;
     transition: opacity var(--transition-duration) var(--transition-timing);
+    z-index: 2;
 }
 
 .task-item.completed .task-checkbox::after {
     opacity: 1;
+}
+
+.task-progress-ring {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    width: 28px;
+    height: 28px;
+    transform: rotate(-90deg);
+}
+
+.task-progress-ring circle {
+    fill: transparent;
+    stroke: var(--accent-color);
+    stroke-width: 2;
+    stroke-linecap: round;
+    transition: stroke-dashoffset var(--transition-duration) ease-in-out;
 }
 
 .task-text {
@@ -358,6 +396,51 @@ header {
     font-size: 1.15rem;
     font-weight: 500;
     transition: all var(--transition-duration) var(--transition-timing);
+}
+
+.progress-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 20px;
+    padding: 4px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.progress-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.05);
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.2s;
+    box-shadow: none;
+}
+
+.progress-btn:hover {
+    background: rgba(255,255,255,0.1);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-sm);
+}
+
+.progress-btn:active {
+    transform: scale(0.95);
+}
+
+.progress-text-display {
+    font-size: 0.9rem;
+    font-weight: 600;
+    min-width: 40px;
+    text-align: center;
+    color: var(--text-secondary);
 }
 
 .task-item.completed .task-text {
